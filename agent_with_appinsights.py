@@ -8,6 +8,7 @@ This example demonstrates how to:
 """
 
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -20,6 +21,7 @@ from azure.ai.projects.telemetry import AIProjectInstrumentor
 from azure.identity import DefaultAzureCredential
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider as SdkTracerProvider
 
 
 def main():
@@ -101,6 +103,14 @@ def main():
             ],
         )
         print(f"Assistant: {response.choices[0].message.content}\n")
+
+    # --- Step 6: Force flush telemetry before exiting ---
+    print("Flushing telemetry to Application Insights...")
+    provider = trace.get_tracer_provider()
+    if isinstance(provider, SdkTracerProvider):
+        provider.force_flush(timeout_millis=10000)
+    # Give the exporter a moment to send
+    time.sleep(5)
 
     print("\n--- Traces sent to Application Insights ---")
     print("View them in the Foundry portal: Observability > Traces")
